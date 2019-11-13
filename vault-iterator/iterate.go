@@ -1,86 +1,53 @@
 package iterate
 
 import (
-	"flag"
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
 )
 
-type authConfig struct {
+// AuthConfig is the structure of the configuration
+type AuthConfig struct {
 	Token     string `yaml:"token"`
 	VaultAddr string `yaml:"vault_addr"`
 }
 
-// Hello does stuff
-func Hello() (err error){
-	key := flag.String("k", "", "key of secret to be retrieved")
-	prop := flag.String("p", "", "property to be retrieved from secret value")
-	flag.Parse()
+// Find does stuff
+func Find(key string, prop string, config AuthConfig) (err error){
 
-	if *key == "" {
-		fmt.Println("Must provide key")
-		return
-	}
-
-	cfg, err := readConfig()
-	if err != nil {
-		fmt.Printf("Failed to load configuration: %v", err)
-		return
+	if key == "" {
+		return errors.New("must provide key")
 	}
 
 	c, err := api.NewClient(&api.Config{
-		Address: cfg.VaultAddr,
+		Address: config.VaultAddr,
 	})
+
 	if err != nil {
-		fmt.Printf("Failed to create Vault client: %v", err)
-		return
+		return err
 	}
 
-	c.SetToken(cfg.Token)
+	c.SetToken(config.Token)
 
-	sec, err := c.Logical().Read(*key)
+	sec, err := c.Logical().Read(key)
 	if err != nil {
-		fmt.Printf("Failed to get secret: %v", err)
-		return
+		return err
 	}
 
 	if sec == nil || sec.Data == nil {
-		fmt.Printf("No data for key %s\n", *key)
-		return
+		return errors.New("no data for key")
 	}
 
-	if *prop == "" {
+	if prop == "" {
 		fmt.Println("Secret data:")
 		for k, v := range sec.Data {
 			fmt.Printf(" - %s -> %v\n", k, v)
 		}
 	} else {
-		fmt.Printf("%s:%s -> %v\n", *key, *prop, sec.Data[*prop])
+		fmt.Printf("%s:%s -> %v\n", key, prop, sec.Data[prop])
 	}
 
 	return
 }
 
-func readConfig() (authConfig, error) {
-	configPath := os.Getenv("ITERATOR_CONFIG_FILE")
-	if configPath == "" {
-		configPath = ".auth.yaml"
-	}
-
-	bs, err := ioutil.ReadFile(configPath)
-	if err != nil {
-		return authConfig{}, errors.Wrap(err, "failed to read configuration file")
-	}
-
-	var cfg authConfig
-	if err := yaml.Unmarshal(bs, &cfg); err != nil {
-		return authConfig{}, errors.Wrap(err, "failed to parse configuration file")
-	}
-
-	return cfg, nil
-}

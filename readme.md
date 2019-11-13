@@ -5,5 +5,6 @@
 > cat $ITERATOR_CONFIG_FILE
 token: s.Ytw5smOEKcbVchuytJax5690
 vault_addr: https://vault.build.splicemachine-dev.io/
+go env -w GOPRIVATE=github.com/njnygaard
 ```
 
