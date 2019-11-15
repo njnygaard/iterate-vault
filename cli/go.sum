@@ -60,7 +60,6 @@ github.com/mitchellh/go-wordwrap v1.0.0/go.mod h1:ZXFpozHsX6DPmq2I0TCekCxypsnAUb
 github.com/mitchellh/mapstructure v1.1.2 h1:fmNYVwqnSfB9mZU6OS2O6GsXM+wcskZDuKQzvN1EDeE=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/mitchellh/reflectwalk v1.0.0/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
-github.com/njnygaard/iterate-vault v0.0.0-20191113185915-c35be35ff17e h1:Re6yVXeKxu83deY5Y5l7m7MykLo+8u7f28fb1E0K1aQ=
 github.com/njnygaard/iterate-vault/vault-iterator v0.0.0-20191113185915-c35be35ff17e h1:3pfw4ieFEq6tFmcENC/gENvEzgrJ/7HY5f+ne20KJXI=
 github.com/njnygaard/iterate-vault/vault-iterator v0.0.0-20191113185915-c35be35ff17e/go.mod h1:1tUB5yg6y1EK9ptMis7uLgNeFKRlngD0IUFcaR6iMpU=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
