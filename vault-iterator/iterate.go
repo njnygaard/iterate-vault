@@ -27,6 +27,7 @@ type Folder struct {
 	childFolders *[]Folder
 	childLeaves  *[]Leaf
 }
+
 func (f *Folder) init() {
 	var folders = make([]Folder, 0)
 	var leaves = make([]Leaf, 0)
@@ -60,6 +61,7 @@ type Leaf struct {
 	data *map[string]interface{}
 	name string
 }
+
 func (l *Leaf) init() {
 	var data = make(map[string]interface{})
 	l.data = &data
@@ -172,7 +174,7 @@ func Find(key string, config AuthConfig, node Node, stack int) (err error) {
 	return
 }
 
-func readData(c *api.Client, dataPath string, node Node)(err error){
+func readData(c *api.Client, dataPath string, node Node) (err error) {
 
 	logger := logrus.WithFields(logrus.Fields{
 		"status":   "working",

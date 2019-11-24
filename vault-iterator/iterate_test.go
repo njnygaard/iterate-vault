@@ -9,8 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-
-func setup()(c AuthConfig, err error){
+func setup() (c AuthConfig, err error) {
 	configPath := os.Getenv("ITERATOR_CONFIG_FILE")
 	if configPath == "" {
 		configPath = ".auth.yaml"
