@@ -15,7 +15,6 @@ func TestFind(t *testing.T) {
 		"status":  "working",
 		"handler": "handleStripeWebhook",
 	})
-	// logger.Info("Something Cool")
 
 	configPath := os.Getenv("ITERATOR_CONFIG_FILE")
 	if configPath == "" {
@@ -64,7 +63,7 @@ func TestFind(t *testing.T) {
 	var root Folder
 	root.init()
 
-	if got := Find("secret/deployments/k8s/default/services/cloudmanager/config", cfg, &root, 0); got != want {
+	if got := Find("secret/deployments/k8s/default/services/cloudmanager", cfg, &root, 0); got != want {
 		t.Errorf("Hello() = %q, want %q", got, want)
 	}
 }
