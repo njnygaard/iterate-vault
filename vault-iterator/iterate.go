@@ -1,7 +1,6 @@
 package iterate
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"github.com/hashicorp/vault/api"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -17,9 +16,10 @@ type AuthConfig struct {
 type Node interface {
 	setName(name string)
 	setData(data map[string]interface{}) (err error)
-	getData()(data *map[string]interface{})
+	getData() (data *map[string]interface{})
 	getChildren() (children *[]Node)
 	addChild(node Node)
+	init()
 }
 
 type Folder struct {
@@ -34,23 +34,18 @@ func (f *Folder) init() {
 	f.childFolders = &folders
 	f.childLeaves = &leaves
 }
-
 func (f *Folder) setName(name string) {
 	f.name = name
 }
-
 func (f *Folder) getChildren() (children *[]Node) {
 	return
 }
-
 func (f *Folder) setData(data map[string]interface{}) (err error) {
 	return errors.New("not implemented for folders")
 }
-
-func (f *Folder) getData()(data *map[string]interface{}) {
+func (f *Folder) getData() (data *map[string]interface{}) {
 	return nil
 }
-
 func (f *Folder) addChild(node Node) {
 	switch v := node.(type) {
 	case *Folder:
@@ -71,15 +66,12 @@ func (l *Leaf) init() {
 	var data = make(map[string]interface{})
 	l.data = &data
 }
-
 func (l *Leaf) setName(name string) {
 	l.name = name
 }
-
 func (l *Leaf) getChildren() (children *[]Node) {
 	return
 }
-
 func (l *Leaf) setData(data map[string]interface{}) (err error) {
 	// https://stackoverflow.com/a/38105687/1236359
 	// You have to dereference the pointer to change 'what it points to'
@@ -89,11 +81,9 @@ func (l *Leaf) setData(data map[string]interface{}) (err error) {
 	// This doesn't work.
 	return nil
 }
-
-func (l *Leaf) getData()(data *map[string]interface{}) {
+func (l *Leaf) getData() (data *map[string]interface{}) {
 	return l.data
 }
-
 func (l *Leaf) addChild(node Node) {
 	return
 }
@@ -133,10 +123,12 @@ func Find(key string, config AuthConfig, node Node, stack int) (err error) {
 		return err
 	}
 	if list == nil {
+		logger.Warn("no list data found at this node")
 		read, err := c.Logical().Read(dataPath)
 		if err != nil {
 			return err
 		}
+
 		if read == nil {
 			logger.Warn("no read data found at this node")
 		} else {
@@ -148,7 +140,7 @@ func Find(key string, config AuthConfig, node Node, stack int) (err error) {
 				if err != nil {
 					logger.Warn(err)
 				}
-			}else{
+			} else {
 				logger.Warn("couldn't pass type assertion")
 			}
 		}
@@ -185,10 +177,15 @@ func Find(key string, config AuthConfig, node Node, stack int) (err error) {
 		}
 	}
 
-	if stack == 0 {
-		logger.Warn("data at root node")
-		spew.Dump(node)
-	}
+	//if stack == 0 {
+	//	spew.Dump(node)
+	//}
 
 	return
 }
+
+//func Move(s string, d string, node Node)(err error) {
+//	var source Node
+//	source, err = Find(s)
+//	return nil
+//}
