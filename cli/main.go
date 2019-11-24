@@ -1,20 +1,19 @@
 package main
 
 import (
+	"github.com/davecgh/go-spew/spew"
 	"io/ioutil"
 	"os"
 
 	iterate "github.com/njnygaard/iterate-vault/vault-iterator"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 func main() {
 	logger := logrus.WithFields(logrus.Fields{
-		"status":  "working",
-		"handler": "handleStripeWebhook",
+		"function": "main",
 	})
-	logger.Info("Something Cool")
 
 	configPath := os.Getenv("ITERATOR_CONFIG_FILE")
 	if configPath == "" {
@@ -34,8 +33,27 @@ func main() {
 		return
 	}
 
-	err = iterate.Find("something", "something_else", cfg)
-	if err != nil {
-		logger.Info(err)
+	args := os.Args[1:]
+
+	switch args[0] {
+	case "get":
+		fallthrough
+	case "g":
+		logger.Info("get")
+		if args[1] == "" {
+			logger.Error("path required")
+			return
+		}else{
+			var root iterate.Folder
+			root.Init()
+			err := iterate.Find(args[1], cfg, &root, 0)
+			if err != nil {
+				logger.Error(err)
+			}
+			spew.Dump(root)
+		}
+	default:
+		logger.Error("unrecognized command")
+		return
 	}
 }

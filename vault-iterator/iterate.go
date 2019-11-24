@@ -19,7 +19,7 @@ type Node interface {
 	getData() (data *map[string]interface{})
 	getChildren() (children *[]Node)
 	addChild(node Node)
-	init()
+	Init()
 }
 
 type Folder struct {
@@ -28,7 +28,7 @@ type Folder struct {
 	childLeaves  *[]Leaf
 }
 
-func (f *Folder) init() {
+func (f *Folder) Init() {
 	var folders = make([]Folder, 0)
 	var leaves = make([]Leaf, 0)
 	f.childFolders = &folders
@@ -62,7 +62,7 @@ type Leaf struct {
 	name string
 }
 
-func (l *Leaf) init() {
+func (l *Leaf) Init() {
 	var data = make(map[string]interface{})
 	l.data = &data
 }
@@ -140,7 +140,7 @@ func Find(key string, config AuthConfig, node Node, stack int) (err error) {
 						if name, ok := v.(string); ok {
 							if strings.HasSuffix(name, "/") {
 								var folder Folder
-								folder.init()
+								folder.Init()
 								folder.setName(name)
 								node.addChild(&folder)
 								deepErr := Find(key+"/"+name, config, &folder, stack+1)
@@ -149,7 +149,7 @@ func Find(key string, config AuthConfig, node Node, stack int) (err error) {
 								}
 							} else {
 								var leaf Leaf
-								leaf.init()
+								leaf.Init()
 								leaf.setName(name)
 								node.addChild(&leaf)
 								deepErr := Find(key+"/"+name, config, &leaf, stack+1)

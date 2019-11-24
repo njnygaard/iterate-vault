@@ -1,10 +1,24 @@
 # vault-iterator
 
+## Testing
+
 ```bash
-> export ITERATOR_CONFIG_FILE=/Users/admin/workspace/vault-iterator/.auth.yaml
-> cat $ITERATOR_CONFIG_FILE
-token: s.Ytw5smOEKcbVchuytJax5690
+cd vault-iterator
+cat << 'EOF' > .auth.yaml
+token: [Vault Token]
 vault_addr: https://vault.build.splicemachine-dev.io/
-go env -w GOPRIVATE=github.com/njnygaard
+EOF
+go test
 ```
 
+## CLI Usage
+
+```bash
+cd cli
+cat << 'EOF' > .auth.yaml
+token: [Vault Token]
+vault_addr: https://vault.build.splicemachine-dev.io/
+EOF
+go build
+./cli g secret/deployments/k8s/default/services/cloudmanager
+```
