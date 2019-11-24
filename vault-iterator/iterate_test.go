@@ -1,7 +1,6 @@
 package iterate
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -10,13 +9,8 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func TestFind(t *testing.T) {
 
-	logger := logrus.WithFields(logrus.Fields{
-		"status":  "working",
-		"handler": "handleStripeWebhook",
-	})
-
+func setup()(c AuthConfig, err error){
 	configPath := os.Getenv("ITERATOR_CONFIG_FILE")
 	if configPath == "" {
 		configPath = ".auth.yaml"
@@ -24,49 +18,64 @@ func TestFind(t *testing.T) {
 
 	bs, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		logger.Error(err)
 		return
 	}
 
-	var cfg AuthConfig
-
-	if err := yaml.Unmarshal(bs, &cfg); err != nil {
-		logger.Error(err)
+	if err = yaml.Unmarshal(bs, &c); err != nil {
 		return
 	}
 
-	//var want error
+	return
+}
 
-	/*
-		vault kv list -format=json secret/deployments/k8s/default/services/cloudmanager/config/
-		[
-		  "api",
-		  "kubernetes/",
-		  "ui"
-		]
+func TestFind_Leaf(t *testing.T) {
 
-		vault kv get -format=json secret/deployments/k8s/default/services/cloudmanager/config/
-		No value found at secret/data/deployments/k8s/default/services/cloudmanager/config
+	logger := logrus.WithFields(logrus.Fields{
+		"test": "TestFind_Leaf",
+	})
 
-		vault kv list -format=json secret/deployments/k8s/default/services/cloudmanager/config/kubernetes
-		[
-		  "cr",
-		  "crd"
-		]
+	cfg, err := setup()
+	if err != nil {
+		t.Errorf("configuration failed with error = %q", err)
+	}
 
-		List Path
-		secret/metadata/deployments/k8s/minikube/services/cloudmanager/config/kubernetes/cr
+	var root Leaf
+	root.init()
 
-		Get Path
-		secret/data/deployments/k8s/minikube/services/cloudmanager/config/kubernetes/cr
-	*/
-	//          secret/metadata/deployments/k8s/minikube/services/cloudmanager/config/kubernetes/cr
+	if err := Find("secret/deployments/k8s/default/services/cloudmanager/config/api", cfg, &root, 0); err != nil {
+		t.Errorf("Get() errored with err = %q", err)
+	}
+
+	// https://stackoverflow.com/a/28384502/1236359
+	// Dereference the pointer to the map first, then index it.
+	if (*root.data)["UNINSTALL_SCRIPT"] != "uninstall_1.0.1.sh" {
+		t.Error("unexpected value error")
+	}
+
+	logger.Info("passed for leaf")
+}
+
+func TestFind_Folder(t *testing.T) {
+
+	logger := logrus.WithFields(logrus.Fields{
+		"test": "TestFind_Folder",
+	})
+
+	cfg, err := setup()
+	if err != nil {
+		t.Errorf("configuration failed with error = %q", err)
+	}
+
 	var root Folder
 	root.init()
 
 	if err := Find("secret/deployments/k8s/default/services/cloudmanager", cfg, &root, 0); err != nil {
 		t.Errorf("Get() errored with err = %q", err)
-	} else {
-		spew.Dump(root)
 	}
+
+	if (*(*(*root.childFolders)[0].childLeaves)[0].data)["UNINSTALL_SCRIPT"] != "uninstall_1.0.1.sh" {
+		t.Error("unexpected value error")
+	}
+
+	logger.Info("passed for folder")
 }

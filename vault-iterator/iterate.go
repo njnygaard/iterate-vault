@@ -27,7 +27,6 @@ type Folder struct {
 	childFolders *[]Folder
 	childLeaves  *[]Leaf
 }
-
 func (f *Folder) init() {
 	var folders = make([]Folder, 0)
 	var leaves = make([]Leaf, 0)
@@ -61,7 +60,6 @@ type Leaf struct {
 	data *map[string]interface{}
 	name string
 }
-
 func (l *Leaf) init() {
 	var data = make(map[string]interface{})
 	l.data = &data
@@ -88,11 +86,12 @@ func (l *Leaf) addChild(node Node) {
 	return
 }
 
-// Find does stuff
+// Find will accept a Node interface type, it needs to do this because it calls itself recursively for both nodes and leaves.
+// If started where node is a Leaf, only a read attempt will be made at that path.
+// If started where node is a Folder, a full population of the tree will be attempted.
 func Find(key string, config AuthConfig, node Node, stack int) (err error) {
 
 	logger := logrus.WithFields(logrus.Fields{
-		"status":   "working",
 		"function": "Find",
 	})
 
@@ -118,70 +117,90 @@ func Find(key string, config AuthConfig, node Node, stack int) (err error) {
 	tokens[1] = "data"
 	dataPath := strings.Join(tokens, "/")
 
-	list, err := c.Logical().List(metadataPath)
-	if err != nil {
-		return err
-	}
-	if list == nil {
-		logger.Warn("no list data found at this node")
-		read, err := c.Logical().Read(dataPath)
+	switch node.(type) {
+	case *Folder:
+		//logger.Info("started with a folder", asserted)
+		list, err := c.Logical().List(metadataPath)
 		if err != nil {
 			return err
 		}
-
-		if read == nil {
-			logger.Warn("no read data found at this node")
-		} else {
-			logger.Info("found leaf data")
-			var data map[string]interface{}
-			var ok bool
-			if data, ok = read.Data["data"].(map[string]interface{}); ok {
-				err := node.setData(data)
-				if err != nil {
-					logger.Warn(err)
-				}
-			} else {
-				logger.Warn("couldn't pass type assertion")
+		if list == nil {
+			logger.Warn("no list data found at this node")
+			err := readData(c, dataPath, node)
+			if err != nil {
+				logger.Error(err)
 			}
-		}
-	} else {
-		logger.Info("found list data")
-		for _, val := range list.Data {
-			if slice, ok := val.([]interface{}); ok {
-				for _, v := range slice {
-					if name, ok := v.(string); ok {
-						if strings.HasSuffix(name, "/") {
-							var folder Folder
-							folder.init()
-							folder.setName(name)
-							node.addChild(&folder)
-							deepErr := Find(key+"/"+name, config, &folder, stack+1)
-							if deepErr != nil {
-								return deepErr
-							}
-						} else {
-							var leaf Leaf
-							leaf.init()
-							leaf.setName(name)
-							node.addChild(&leaf)
-							deepErr := Find(key+"/"+name, config, &leaf, stack+1)
-							if deepErr != nil {
-								return deepErr
+		} else {
+			//logger.Info("found list data")
+			for _, val := range list.Data {
+				if slice, ok := val.([]interface{}); ok {
+					for _, v := range slice {
+						if name, ok := v.(string); ok {
+							if strings.HasSuffix(name, "/") {
+								var folder Folder
+								folder.init()
+								folder.setName(name)
+								node.addChild(&folder)
+								deepErr := Find(key+"/"+name, config, &folder, stack+1)
+								if deepErr != nil {
+									return deepErr
+								}
+							} else {
+								var leaf Leaf
+								leaf.init()
+								leaf.setName(name)
+								node.addChild(&leaf)
+								deepErr := Find(key+"/"+name, config, &leaf, stack+1)
+								if deepErr != nil {
+									return deepErr
+								}
 							}
 						}
 					}
+				} else {
+					logger.Errorf("not implemented for: %#v\n", val)
 				}
-			} else {
-				logger.Errorf("not implemented for: %#v\n", val)
 			}
+		}
+	case *Leaf:
+		//logger.Info("started with a leaf", asserted)
+		err = readData(c, dataPath, node)
+	default:
+		return
+	}
+
+	return
+}
+
+func readData(c *api.Client, dataPath string, node Node)(err error){
+
+	logger := logrus.WithFields(logrus.Fields{
+		"status":   "working",
+		"function": "readData",
+	})
+
+	read, err := c.Logical().Read(dataPath)
+	if err != nil {
+		return err
+	}
+
+	if read == nil {
+		logger.Warn("no read data found at this node")
+	} else {
+		//logger.Info("found leaf data")
+		var data map[string]interface{}
+		var ok bool
+		if data, ok = read.Data["data"].(map[string]interface{}); ok {
+			err := node.setData(data)
+			if err != nil {
+				logger.Warn(err)
+			}
+		} else {
+			logger.Warn("couldn't pass type assertion")
 		}
 	}
 
-	//if stack == 0 {
-	//	spew.Dump(node)
-	//}
-
-	return
+	return nil
 }
 
 //func Move(s string, d string, node Node)(err error) {
