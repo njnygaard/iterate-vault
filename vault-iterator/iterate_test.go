@@ -39,7 +39,7 @@ func TestFind_Leaf(t *testing.T) {
 	}
 
 	var root Leaf
-	root.init()
+	root.Init()
 
 	if err := Find("secret/deployments/k8s/default/services/cloudmanager/config/api", cfg, &root, 0); err != nil {
 		t.Errorf("Get() errored with err = %q", err)
@@ -51,7 +51,7 @@ func TestFind_Leaf(t *testing.T) {
 		t.Error("unexpected value error")
 	}
 
-	logger.Info("passed for leaf")
+	logger.Info("find leaf passed")
 }
 
 func TestFind_Folder(t *testing.T) {
@@ -66,7 +66,7 @@ func TestFind_Folder(t *testing.T) {
 	}
 
 	var root Folder
-	root.init()
+	root.Init()
 
 	if err := Find("secret/deployments/k8s/default/services/cloudmanager", cfg, &root, 0); err != nil {
 		t.Errorf("Get() errored with err = %q", err)
@@ -76,5 +76,55 @@ func TestFind_Folder(t *testing.T) {
 		t.Error("unexpected value error")
 	}
 
-	logger.Info("passed for folder")
+	logger.Info("find folder passed")
+}
+
+func TestMove_Leaf(t *testing.T) {
+
+	logger := logrus.WithFields(logrus.Fields{
+		"test": "TestMove_Leaf",
+	})
+
+	cfg, err := setup()
+	if err != nil {
+		t.Errorf("configuration failed with error = %q", err)
+	}
+
+	var root Folder
+	root.Init()
+
+	if err := Find("secret/deployments/k8s/default/services/cloudmanager", cfg, &root, 0); err != nil {
+		t.Errorf("Get() errored with err = %q", err)
+	}
+
+	if (*(*(*root.childFolders)[0].childLeaves)[0].data)["UNINSTALL_SCRIPT"] != "uninstall_1.0.1.sh" {
+		t.Error("unexpected value error")
+	}
+
+	logger.Info("move leaf passed")
+}
+
+func TestMove_Folder(t *testing.T) {
+
+	logger := logrus.WithFields(logrus.Fields{
+		"test": "TestMove_Folder",
+	})
+
+	cfg, err := setup()
+	if err != nil {
+		t.Errorf("configuration failed with error = %q", err)
+	}
+
+	var root Folder
+	root.Init()
+
+	if err := Find("secret/deployments/k8s/default/services/cloudmanager", cfg, &root, 0); err != nil {
+		t.Errorf("Get() errored with err = %q", err)
+	}
+
+	if (*(*(*root.childFolders)[0].childLeaves)[0].data)["UNINSTALL_SCRIPT"] != "uninstall_1.0.1.sh" {
+		t.Error("unexpected value error")
+	}
+
+	logger.Info("move folder passed")
 }

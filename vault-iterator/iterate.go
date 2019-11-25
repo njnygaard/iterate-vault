@@ -205,8 +205,16 @@ func readData(c *api.Client, dataPath string, node Node) (err error) {
 	return nil
 }
 
-//func Move(s string, d string, node Node)(err error) {
-//	var source Node
-//	source, err = Find(s)
-//	return nil
-//}
+// Move will accept a Node interface type, it needs to do this because it calls itself recursively for both nodes and leaves.
+// If started where node is a Leaf, only a direct move of said key will be processed
+// If started where node is a Folder, a full population of the tree will be attempted.
+func Move(s string, d string, config AuthConfig, node Node, stack int)(err error) {
+
+	logger := logrus.WithFields(logrus.Fields{
+		"function": "Move",
+	})
+
+	logger.Info("Move")
+
+	return nil
+}
