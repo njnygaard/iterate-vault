@@ -1,3 +1,4 @@
-.idea/
-.auth.yaml
 **/.auth.yaml
+cli/cli
+**/.python-version
+**/.idea
