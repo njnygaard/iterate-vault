@@ -214,7 +214,59 @@ func Move(s string, d string, config AuthConfig, node Node, stack int)(err error
 		"function": "Move",
 	})
 
-	logger.Info("Move")
+	c, err := api.NewClient(&api.Config{
+		Address: config.VaultAddr,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	c.SetToken(config.Token)
+
+	tokens := strings.Split(d, "/")
+	tokens = append(tokens, "")
+	copy(tokens[1+1:], tokens[1:])
+	//tokens[1] = "metadata"
+	//metadataPath := strings.Join(tokens, "/")
+	tokens[1] = "data"
+	dataPath := strings.Join(tokens, "/")
+
+	switch n := node.(type) {
+	case *Folder:
+		err = Find(s, config, n, 0)
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		for _, val := range *n.childLeaves {
+			logger.Infof("destination: %s", d)
+			logger.Infof("leaf name: %s", val.name)
+			// https://github.com/hashicorp/vault/issues/6200#issuecomment-462088137
+			var secret = make(map[string]interface{})
+			secret["data"] = val.data
+			_, writeErr := c.Logical().Write(dataPath + val.name, secret)
+			if writeErr != nil {
+				logger.Error(writeErr)
+				return writeErr
+			}
+		}
+		for _, val := range *n.childFolders {
+			logger.Infof("folder name: %s", val.name)
+			var deepRoot Folder
+			deepRoot.Init()
+			err = Move(s + val.name, d + val.name, config, &deepRoot, stack + 1)
+			if err != nil {
+				logger.Error(err)
+				return
+			}
+		}
+	case *Leaf:
+		logger.Warn("not implemented")
+		return nil
+	default:
+		return errors.New("Node must be a Leaf or Folder")
+	}
 
 	return nil
 }

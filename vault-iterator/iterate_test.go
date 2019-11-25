@@ -79,37 +79,15 @@ func TestFind_Folder(t *testing.T) {
 	logger.Info("find folder passed")
 }
 
-func TestMove_Leaf(t *testing.T) {
-
-	logger := logrus.WithFields(logrus.Fields{
-		"test": "TestMove_Leaf",
-	})
-
-	cfg, err := setup()
-	if err != nil {
-		t.Errorf("configuration failed with error = %q", err)
-	}
-
-	var root Folder
-	root.Init()
-
-	if err := Find("secret/deployments/k8s/default/services/cloudmanager", cfg, &root, 0); err != nil {
-		t.Errorf("Get() errored with err = %q", err)
-	}
-
-	if (*(*(*root.childFolders)[0].childLeaves)[0].data)["UNINSTALL_SCRIPT"] != "uninstall_1.0.1.sh" {
-		t.Error("unexpected value error")
-	}
-
-	logger.Info("move leaf passed")
-}
-
 func TestMove_Folder(t *testing.T) {
 
 	logger := logrus.WithFields(logrus.Fields{
 		"test": "TestMove_Folder",
 	})
 
+	source := "secret/deployments/k8s/default/services/cloudmanager/"
+	destination := "secret/testing/k8s/default/services/cloudmanager/"
+
 	cfg, err := setup()
 	if err != nil {
 		t.Errorf("configuration failed with error = %q", err)
@@ -117,14 +95,45 @@ func TestMove_Folder(t *testing.T) {
 
 	var root Folder
 	root.Init()
+	var populated Folder
+	populated.Init()
 
-	if err := Find("secret/deployments/k8s/default/services/cloudmanager", cfg, &root, 0); err != nil {
+	if err := Move(source, destination, cfg, &root, 0); err != nil {
+		t.Errorf("Move() errored with err = %q", err)
+	}
+
+	if err := Find(destination, cfg, &populated, 0); err != nil {
 		t.Errorf("Get() errored with err = %q", err)
 	}
 
-	if (*(*(*root.childFolders)[0].childLeaves)[0].data)["UNINSTALL_SCRIPT"] != "uninstall_1.0.1.sh" {
+	if (*(*(*populated.childFolders)[0].childLeaves)[0].data)["UNINSTALL_SCRIPT"] != "uninstall_1.0.1.sh" {
 		t.Error("unexpected value error")
 	}
 
-	logger.Info("move folder passed")
+	logger.Info("move leaf passed")
 }
+
+//func TestMove_Leaf(t *testing.T) {
+//
+//	logger := logrus.WithFields(logrus.Fields{
+//		"test": "TestMove_Folder",
+//	})
+//
+//	cfg, err := setup()
+//	if err != nil {
+//		t.Errorf("configuration failed with error = %q", err)
+//	}
+//
+//	var root Folder
+//	root.Init()
+//
+//	if err := Find("secret/deployments/k8s/default/services/cloudmanager", cfg, &root, 0); err != nil {
+//		t.Errorf("Get() errored with err = %q", err)
+//	}
+//
+//	if (*(*(*root.childFolders)[0].childLeaves)[0].data)["UNINSTALL_SCRIPT"] != "uninstall_1.0.1.sh" {
+//		t.Error("unexpected value error")
+//	}
+//
+//	logger.Info("move folder passed")
+//}
