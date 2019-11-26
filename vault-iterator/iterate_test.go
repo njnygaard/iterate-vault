@@ -88,7 +88,12 @@ func TestMove_Folder(t *testing.T) {
 	source := "secret/deployments/k8s/default/services/cloudmanager/"
 	destination := "secret/testing/k8s/default/services/cloudmanager/"
 
-	cfg, err := setup()
+	sourceConfig, err := setup()
+	if err != nil {
+		t.Errorf("configuration failed with error = %q", err)
+	}
+
+	destinationConfig, err := setup()
 	if err != nil {
 		t.Errorf("configuration failed with error = %q", err)
 	}
@@ -98,11 +103,11 @@ func TestMove_Folder(t *testing.T) {
 	var populated Folder
 	populated.Init()
 
-	if err := Move(source, destination, cfg, &root, 0); err != nil {
+	if err := Move(source, destination, sourceConfig, destinationConfig, &root, 0); err != nil {
 		t.Errorf("Move() errored with err = %q", err)
 	}
 
-	if err := Find(destination, cfg, &populated, 0); err != nil {
+	if err := Find(destination, destinationConfig, &populated, 0); err != nil {
 		t.Errorf("Get() errored with err = %q", err)
 	}
 

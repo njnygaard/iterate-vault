@@ -9,8 +9,10 @@ import (
 
 // AuthConfig is the structure of the configuration
 type AuthConfig struct {
-	Token     string `yaml:"token"`
-	VaultAddr string `yaml:"vault_addr"`
+	SourceToken          string `yaml:"sourceToken"`
+	SourceVaultAddr      string `yaml:"source_vault_addr"`
+	DestinationToken     string `yaml:"destinationToken"`
+	DestinationVaultAddr string `yaml:"destination_vault_addr"`
 }
 
 type Node interface {
@@ -102,14 +104,14 @@ func Find(key string, config AuthConfig, node Node, stack int) (err error) {
 	}
 
 	c, err := api.NewClient(&api.Config{
-		Address: config.VaultAddr,
+		Address: config.SourceVaultAddr,
 	})
 
 	if err != nil {
 		return err
 	}
 
-	c.SetToken(config.Token)
+	c.SetToken(config.SourceToken)
 
 	tokens := strings.Split(key, "/")
 	tokens = append(tokens, "")
@@ -208,21 +210,31 @@ func readData(c *api.Client, dataPath string, node Node) (err error) {
 // Move will accept a Node interface type, it needs to do this because it calls itself recursively for both nodes and leaves.
 // If started where node is a Leaf, only a direct move of said key will be processed
 // If started where node is a Folder, a full population of the tree will be attempted.
-func Move(s string, d string, config AuthConfig, node Node, stack int)(err error) {
+func Move(s string, d string, sourceConfig AuthConfig, destConfig AuthConfig, node Node, stack int) (err error) {
 
 	logger := logrus.WithFields(logrus.Fields{
 		"function": "Move",
 	})
 
-	c, err := api.NewClient(&api.Config{
-		Address: config.VaultAddr,
+	sC, err := api.NewClient(&api.Config{
+		Address: sourceConfig.SourceVaultAddr,
 	})
 
 	if err != nil {
 		return err
 	}
 
-	c.SetToken(config.Token)
+	sC.SetToken(sourceConfig.SourceToken)
+
+	dC, err := api.NewClient(&api.Config{
+		Address: destConfig.DestinationVaultAddr,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	dC.SetToken(destConfig.DestinationToken)
 
 	tokens := strings.Split(d, "/")
 	tokens = append(tokens, "")
@@ -234,7 +246,7 @@ func Move(s string, d string, config AuthConfig, node Node, stack int)(err error
 
 	switch n := node.(type) {
 	case *Folder:
-		err = Find(s, config, n, 0)
+		err = Find(s, sourceConfig, n, 0)
 		if err != nil {
 			logger.Error(err)
 			return
@@ -245,7 +257,7 @@ func Move(s string, d string, config AuthConfig, node Node, stack int)(err error
 			// https://github.com/hashicorp/vault/issues/6200#issuecomment-462088137
 			var secret = make(map[string]interface{})
 			secret["data"] = val.data
-			_, writeErr := c.Logical().Write(dataPath + val.name, secret)
+			_, writeErr := dC.Logical().Write(dataPath+val.name, secret)
 			if writeErr != nil {
 				logger.Error(writeErr)
 				return writeErr
@@ -255,7 +267,7 @@ func Move(s string, d string, config AuthConfig, node Node, stack int)(err error
 			logger.Infof("folder name: %s", val.name)
 			var deepRoot Folder
 			deepRoot.Init()
-			err = Move(s + val.name, d + val.name, config, &deepRoot, stack + 1)
+			err = Move(s+val.name, d+val.name, sourceConfig, destConfig, &deepRoot, stack+1)
 			if err != nil {
 				logger.Error(err)
 				return
